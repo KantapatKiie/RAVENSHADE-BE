@@ -24,6 +24,33 @@ export class ReservationController {
         });
       }
 
+      // Check for existing private or group reservations
+      const existingReservations = await client.query(
+        `SELECT reservation_type FROM reservations 
+         WHERE reservation_date = $1 
+         AND status != 'cancelled'`,
+        [validatedData.reservation_date]
+      );
+
+      // If there's a private or group booking, block all other reservations
+      const hasPrivateOrGroup = existingReservations.rows.some(
+        row => row.reservation_type === 'private' || row.reservation_type === 'group'
+      );
+
+      if (hasPrivateOrGroup) {
+        return res.status(400).json({ 
+          error: 'This date is already booked for a private or group event' 
+        });
+      }
+
+      // If trying to book private/group and there are existing reservations
+      if ((validatedData.reservation_type === 'private' || validatedData.reservation_type === 'group') 
+          && existingReservations.rows.length > 0) {
+        return res.status(400).json({ 
+          error: 'Cannot book private/group event on a date with existing reservations' 
+        });
+      }
+
       // Begin transaction
       await client.query('BEGIN');
 

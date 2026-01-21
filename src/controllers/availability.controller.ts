@@ -24,6 +24,31 @@ export class AvailabilityController {
         });
       }
 
+      // Check for existing private or group reservations
+      const privateGroupCheck = await pool.query(
+        `SELECT reservation_type, name FROM reservations 
+         WHERE reservation_date = $1 
+         AND reservation_type IN ('private', 'group')
+         AND status != 'cancelled'
+         LIMIT 1`,
+        [date]
+      );
+
+      if (privateGroupCheck.rows.length > 0) {
+        const reservationType = privateGroupCheck.rows[0].reservation_type;
+        return res.json({
+          date,
+          available: false,
+          available_capacity: 0,
+          total_capacity: 60,
+          is_closed: false,
+          blocked_by: reservationType,
+          notes: reservationType === 'private' 
+            ? 'This date is fully booked for a private event' 
+            : 'This date is booked for a group reservation',
+        });
+      }
+
       // Check availability table
       const result = await pool.query(
         'SELECT * FROM availability WHERE date = $1',
