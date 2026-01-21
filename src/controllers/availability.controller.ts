@@ -117,4 +117,71 @@ export class AvailabilityController {
       res.status(500).json({ error: 'Failed to get time slots' });
     }
   }
+
+  // Admin: Get all availability settings
+  async getAllAvailability(req: Request, res: Response) {
+    try {
+      const result = await pool.query(
+        'SELECT * FROM availability ORDER BY date DESC'
+      );
+      
+      res.json(result.rows);
+    } catch (error) {
+      console.error('Error getting availability:', error);
+      res.status(500).json({ error: 'Failed to get availability' });
+    }
+  }
+
+  // Admin: Set availability for a date
+  async setAvailability(req: Request, res: Response) {
+    try {
+      const { date, is_closed, blocked_by, notes } = req.body;
+
+      // Validate required fields
+      if (!date) {
+        return res.status(400).json({ error: 'Date is required' });
+      }
+
+      // Upsert availability record
+      const result = await pool.query(
+        `INSERT INTO availability (date, is_closed, blocked_by, notes, available_capacity, total_capacity)
+         VALUES ($1, $2, $3, $4, $5, $6)
+         ON CONFLICT (date) 
+         DO UPDATE SET 
+           is_closed = $2,
+           blocked_by = $3,
+           notes = $4,
+           available_capacity = CASE WHEN $2 = true THEN 0 ELSE 60 END,
+           updated_at = CURRENT_TIMESTAMP
+         RETURNING *`,
+        [date, is_closed || false, blocked_by || null, notes || null, is_closed ? 0 : 60, 60]
+      );
+
+      res.json(result.rows[0]);
+    } catch (error) {
+      console.error('Error setting availability:', error);
+      res.status(500).json({ error: 'Failed to set availability' });
+    }
+  }
+
+  // Admin: Delete availability setting
+  async deleteAvailability(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+
+      const result = await pool.query(
+        'DELETE FROM availability WHERE id = $1 RETURNING *',
+        [id]
+      );
+
+      if (result.rows.length === 0) {
+        return res.status(404).json({ error: 'Availability setting not found' });
+      }
+
+      res.json({ message: 'Availability setting deleted successfully' });
+    } catch (error) {
+      console.error('Error deleting availability:', error);
+      res.status(500).json({ error: 'Failed to delete availability' });
+    }
+  }
 }
