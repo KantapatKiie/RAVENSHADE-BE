@@ -12,7 +12,7 @@ const PORT = process.env.PORT || 3001;
 
 // Middleware
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+  origin: process.env.CORS_ORIGIN?.split(',') || ['http://localhost:5173', 'https://ravenshade-ansjixl6j-kiiekys-projects.vercel.app'],
   credentials: true,
 }));
 app.use(express.json());
