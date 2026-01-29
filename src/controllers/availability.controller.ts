@@ -24,6 +24,18 @@ export class AvailabilityController {
         });
       }
 
+      // Check if it's Monday (getDay() returns 0 for Sunday, 1 for Monday, etc.)
+      if (selectedDate.getDay() === 1) {
+        return res.json({
+          date,
+          available: false,
+          available_capacity: 0,
+          total_capacity: 60,
+          is_closed: true,
+          notes: 'Closed on Mondays',
+        });
+      }
+
       // Check for existing private or group reservations
       const privateGroupCheck = await pool.query(
         `SELECT reservation_type, name FROM reservations 
@@ -63,6 +75,7 @@ export class AvailabilityController {
           available_capacity: availability.available_capacity,
           total_capacity: availability.total_capacity,
           is_closed: availability.is_closed,
+          blocked_by: availability.blocked_by,
           notes: availability.notes,
         });
       }

@@ -22,6 +22,7 @@ CREATE TABLE availability (
     total_capacity INTEGER DEFAULT 60,
     available_capacity INTEGER DEFAULT 60,
     is_closed BOOLEAN DEFAULT FALSE,
+    blocked_by VARCHAR(20) CHECK (blocked_by IN ('private', 'group', 'closed') OR blocked_by IS NULL),
     notes TEXT,
     created_at TIMESTAMP DEFAULT NOW(),
     updated_at TIMESTAMP DEFAULT NOW()
@@ -42,7 +43,7 @@ CREATE TABLE reservations (
     created_at TIMESTAMP DEFAULT NOW(),
     updated_at TIMESTAMP DEFAULT NOW(),
     CONSTRAINT valid_guest_count CHECK (
-        (reservation_type = 'regular' AND number_of_guests <= 8) OR
+        (reservation_type = 'regular' AND number_of_guests <= 40) OR
         (reservation_type = 'group' AND number_of_guests BETWEEN 8 AND 40) OR
         (reservation_type = 'private' AND number_of_guests BETWEEN 40 AND 60)
     )
